@@ -29,7 +29,7 @@ secrets.toml.example       # template for Spotify credentials
 
 ```bash
 pip install -r requirements.txt
-streamlit run Home.py
+python3 -m streamlit run Home.py
 ```
 
 Both pages default to **sample data**, so it works immediately.
