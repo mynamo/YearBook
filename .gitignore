@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# Secrets — never commit real credentials (keep secrets.toml.example)
+.streamlit/secrets.toml
+secrets.toml
+.env
+
+# Personal data exports (don't commit your own listening/reading history)
+*.zip
+StreamingHistory*.json
+Streaming_History*.json
+watch-history.json
+*Play Activity*.csv
+goodreads_library_export*.csv
+*storygraph*.csv
+
+# Editor / OS cruft
+.idea/
+.vscode/
+*.swp
+Thumbs.db
