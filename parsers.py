@@ -157,6 +157,43 @@ def parse_youtube(records):
 
 
 # ---------------------------------------------------------------------------
+# YouTube (Music) — CSV from converting Takeout watch-history.html
+# Columns: platform, title, channel, url, timestamp
+# ---------------------------------------------------------------------------
+def parse_youtube_csv(df):
+    cols = {c.lower(): c for c in df.columns}
+    c_title = cols.get("title")
+    c_ts = cols.get("timestamp") or cols.get("time") or cols.get("date")
+    c_channel = cols.get("channel")
+    c_plat = cols.get("platform")
+    if c_title is None or c_ts is None:
+        return _empty()
+
+    # Timestamps look like "Jul 10, 2026, 12:18:32 PM PDT" — drop the trailing
+    # timezone abbreviation (pandas can't parse named zones) then parse.
+    ts_raw = df[c_ts].astype(str).str.replace(r"\s+[A-Z]{2,4}$", "", regex=True)
+    ts = pd.to_datetime(ts_raw, errors="coerce")
+
+    if c_channel:
+        artist = (df[c_channel].fillna("").astype(str)
+                  .str.replace(r"\s*-\s*Topic$", "", regex=True).str.strip())
+        artist = artist.mask(artist == "", "(unknown channel)")
+    else:
+        artist = "(unknown channel)"
+
+    out = pd.DataFrame({
+        "ts": ts,
+        "artist": artist,
+        "track": df[c_title].astype(str),
+        "album": "",
+        "ms_played": float("nan"),   # watch history has no duration
+        "platform": df[c_plat].fillna("YouTube").astype(str) if c_plat else "YouTube",
+    })
+    out = out[out["track"].notna() & (out["track"].str.strip() != "") & (out["track"] != "nan")]
+    return out.dropna(subset=["ts"])[COLUMNS]
+
+
+# ---------------------------------------------------------------------------
 # Auto-detect + dispatch
 # ---------------------------------------------------------------------------
 def parse_any(filename, raw):
@@ -164,8 +201,15 @@ def parse_any(filename, raw):
     name = (filename or "").lower()
     text = raw.decode("utf-8-sig", errors="ignore")
 
-    # CSV -> Apple Music
+    # CSV -> YouTube watch-history CSV, else Apple Music
     if name.endswith(".csv"):
+        try:
+            df = pd.read_csv(io.StringIO(text))
+        except Exception:
+            return _empty()
+        cl = {c.lower() for c in df.columns}
+        if {"title", "timestamp"} <= cl or {"platform", "channel"} <= cl:
+            return parse_youtube_csv(df)
         return parse_apple(text)
 
     # JSON -> Spotify or YouTube
