@@ -3,9 +3,9 @@
 """
 💬 Social Wrapped — Reddit, Twitter/X, and Instagram in one view.
 
-Reddit can connect live (its free API allows personal use). Twitter and Instagram
-have no usable personal API, so those come from their export files. Or explore the
-sample, which mixes all three.
+All three are upload-first: none currently offers a usable personal-data API
+(Reddit ended self-serve API access in 2026; X is paywalled; Instagram's died in
+2024). Every platform's export is free, though — or explore the mixed sample.
 """
 
 import re
@@ -17,7 +17,6 @@ import altair as alt
 
 from social_parsers import load_social_files
 from social_sample import generate
-import reddit_auth as rd
 
 st.set_page_config(page_title="Social · Yearbook", page_icon="💬", layout="wide")
 
@@ -28,55 +27,14 @@ st.caption("Your year across Reddit, Twitter/X, and Instagram.")
 
 st.sidebar.header("💬 Your socials")
 mode = st.sidebar.radio(
-    "Data source", ["Use sample data", "Connect Reddit (live)", "Upload my exports"],
-    help="Reddit connects live; Twitter/Instagram come from export files.",
+    "Data source", ["Use sample data", "Upload my exports"],
+    help="Upload your Reddit / Twitter / Instagram exports, or explore the sample.",
 )
 
 raw = None
 report = None
 
-
-def reddit_credentials_form():
-    """Let the user paste Reddit app credentials right here — no secrets file needed."""
-    with st.sidebar.expander("Enter Reddit app credentials", expanded=True):
-        st.caption("Create a **web app** at reddit.com/prefs/apps, then paste below. "
-                   "Stored only in this session.")
-        cid = st.text_input("Client ID")
-        secret = st.text_input("Client secret", type="password")
-        redirect = st.text_input("Redirect URI", value="http://localhost:8501")
-        ua = st.text_input("User agent", value="yearbook-wrapped/1.0 by u/yourname")
-        if st.button("Save credentials"):
-            if cid and secret and redirect:
-                rd.set_credentials(cid, secret, redirect, ua)
-                st.rerun()
-            else:
-                st.warning("Client ID, secret, and redirect URI are required.")
-
-
-if mode == "Connect Reddit (live)":
-    if not rd.is_configured():
-        reddit_credentials_form()
-        st.sidebar.info("Add your Reddit app credentials above to enable the login.")
-    else:
-        token = rd.valid_access_token()
-        if token:
-            who = rd.fetch_me(token)
-            st.sidebar.success(f"Connected as u/{who}")
-            if st.sidebar.button("Disconnect"):
-                rd.disconnect(); st.rerun()
-            try:
-                raw = rd.fetch_recent(token, who)
-            except Exception as e:
-                st.sidebar.error(f"Couldn't load Reddit data: {e}")
-        else:
-            st.sidebar.link_button("🔗 Connect Reddit", rd.build_auth_url(),
-                                   type="primary", use_container_width=True)
-            st.sidebar.caption("You'll log in at Reddit, then come back here.")
-            if st.sidebar.button("Re-enter credentials"):
-                rd.disconnect()
-                st.session_state.pop("reddit_creds", None)
-                st.rerun()
-elif mode == "Upload my exports":
+if mode == "Upload my exports":
     uploads = st.sidebar.file_uploader(
         "Reddit posts.csv/comments.csv · Twitter tweets.js · Instagram posts_1.json",
         type=["csv", "js", "json"], accept_multiple_files=True)
@@ -88,13 +46,11 @@ else:
     raw = generate()
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Reddit: reddit.com/settings/data-request or live login. "
+st.sidebar.caption("Reddit: reddit.com/settings/data-request (posts.csv, comments.csv). "
                    "Twitter: your X archive (tweets.js). Instagram: Download Your Information (JSON).")
 
 if raw is None or len(raw) == 0:
-    if mode == "Connect Reddit (live)":
-        st.info("Enter your Reddit credentials and click **Connect Reddit** in the sidebar.")
-    elif mode == "Upload my exports":
+    if mode == "Upload my exports":
         st.info("Upload a Reddit / Twitter / Instagram export, or switch to sample data.")
     else:
         st.info("Loading sample data…")

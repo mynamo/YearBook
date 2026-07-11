@@ -68,6 +68,8 @@ def is_configured():
 
 
 def _ua():
+    if st.session_state.get("reddit_ua"):
+        return st.session_state["reddit_ua"]
     cfg = get_config()
     return cfg[3] if cfg else "yearbook-wrapped/1.0"
 
@@ -113,6 +115,36 @@ def valid_access_token():
     if time.time() >= tok.get("expires_at", 0):
         return None  # temporary token expired — reconnect
     return tok.get("access_token")
+
+
+# ---------------------------------------------------------------------------
+# Easy path: "script" app (password grant) — no redirect / OAuth login needed.
+# Works for your OWN account only, which is exactly this use case.
+# ---------------------------------------------------------------------------
+def script_connect(client_id, client_secret, username, password, user_agent=""):
+    """Log in with a Reddit 'script' app. Returns (ok, message)."""
+    ua = user_agent.strip() or f"yearbook-wrapped/1.0 by u/{username}"
+    try:
+        resp = requests.post(
+            TOKEN_URL,
+            auth=(client_id.strip(), client_secret.strip()),
+            data={"grant_type": "password",
+                  "username": username.strip(),
+                  "password": password},
+            headers={"User-Agent": ua},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        tok = resp.json()
+        if "access_token" not in tok:
+            return False, tok.get("error", "no access token returned")
+        tok["expires_at"] = time.time() + tok.get("expires_in", 3600) - 60
+        st.session_state["reddit_token"] = tok
+        st.session_state["reddit_user"] = username.strip()
+        st.session_state["reddit_ua"] = ua
+        return True, "connected"
+    except Exception as e:
+        return False, str(e)
 
 
 def _get(path, token, params=None):
@@ -188,5 +220,5 @@ def handle_callback():
 
 
 def disconnect():
-    st.session_state.pop("reddit_token", None)
-    st.session_state.pop("reddit_oauth_state", None)
+    for k in ("reddit_token", "reddit_oauth_state", "reddit_user", "reddit_ua", "reddit_creds"):
+        st.session_state.pop(k, None)

@@ -190,7 +190,15 @@ def parse_youtube_csv(df):
         "platform": df[c_plat].fillna("YouTube").astype(str) if c_plat else "YouTube",
     })
     out = out[out["track"].notna() & (out["track"].str.strip() != "") & (out["track"] != "nan")]
-    return out.dropna(subset=["ts"])[COLUMNS]
+    out = out.dropna(subset=["ts"])
+
+    # This is the Music page — keep just the YouTube Music rows so the dashboard
+    # is actual music, not talk shows/ads. Fall back to everything if the export
+    # has no music rows tagged.
+    music = out[out["platform"] == "YouTube Music"]
+    if not music.empty:
+        out = music
+    return out[COLUMNS]
 
 
 # ---------------------------------------------------------------------------

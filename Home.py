@@ -14,14 +14,12 @@ Run:  streamlit run Home.py
 
 import streamlit as st
 import spotify_auth as sp
-import reddit_auth as rd
 
 st.set_page_config(page_title="Yearbook", page_icon="🎁", layout="wide")
 
-# OAuth redirects (Spotify, Reddit) return to the app root — process them here so
-# the token is ready when the user opens the relevant page.
+# The Spotify OAuth redirect returns to the app root — process it here so the
+# token is ready when the user opens the Music page.
 sp.handle_callback()
-rd.handle_callback()
 
 st.title("🎁 Yearbook")
 st.subheader("Turn your messy data exports into a personal year-in-review.")
@@ -45,8 +43,8 @@ with col1:
     st.markdown("### 💬 Social")
     st.markdown(
         "Reddit, Twitter/X, and Instagram in one view — activity over time, top "
-        "subreddits/hashtags, and when you post. **Connect Reddit** for live data; "
-        "Twitter/Instagram come from their export files."
+        "subreddits/hashtags, and when you post. Upload each platform's export "
+        "(no personal-data APIs are available anymore), or explore the sample."
     )
     st.page_link("pages/3_💬_Social.py", label="Open Social →")
 with col2:
