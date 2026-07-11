@@ -33,19 +33,34 @@ TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
 API_BASE = "https://oauth.reddit.com"
 SCOPES = "identity history read"
 
-SOCIAL_COLUMNS = ["ts", "subreddit", "kind", "text", "score", "permalink", "source"]
+SOCIAL_COLUMNS = ["ts", "platform", "kind", "channel", "text", "engagement", "permalink", "source"]
 
 
 def get_config():
+    """Credentials come from the on-page form (session) first, then st.secrets."""
+    creds = st.session_state.get("reddit_creds")
+    if creds:
+        cid, secret, redirect = creds.get("client_id"), creds.get("client_secret"), creds.get("redirect_uri")
+        if cid and secret and redirect:
+            return cid, secret, redirect, creds.get("user_agent") or "yearbook-wrapped/1.0"
     try:
         cfg = st.secrets["reddit"]
         cid, secret, redirect = cfg["client_id"], cfg["client_secret"], cfg["redirect_uri"]
         if cid and secret and redirect:
-            ua = cfg.get("user_agent", "yearbook-wrapped/1.0")
-            return cid, secret, redirect, ua
+            return cid, secret, redirect, cfg.get("user_agent", "yearbook-wrapped/1.0")
     except Exception:
         pass
     return None
+
+
+def set_credentials(client_id, client_secret, redirect_uri, user_agent=""):
+    """Store UI-entered credentials in the session (not persisted to disk)."""
+    st.session_state["reddit_creds"] = {
+        "client_id": client_id.strip(),
+        "client_secret": client_secret.strip(),
+        "redirect_uri": redirect_uri.strip(),
+        "user_agent": user_agent.strip(),
+    }
 
 
 def is_configured():
@@ -127,9 +142,9 @@ def _rows_from_listing(listing):
         sub = d.get("subreddit", "")
         permalink = "https://www.reddit.com" + d.get("permalink", "") if d.get("permalink") else ""
         if kind == "t3":       # post
-            rows.append((ts, sub, "post", d.get("title", ""), d.get("score"), permalink))
+            rows.append((ts, "Reddit", "post", sub, d.get("title", ""), d.get("score"), permalink, "Reddit (live)"))
         elif kind == "t1":     # comment
-            rows.append((ts, sub, "comment", d.get("body", ""), d.get("score"), permalink))
+            rows.append((ts, "Reddit", "comment", sub, d.get("body", ""), d.get("score"), permalink, "Reddit (live)"))
     return rows
 
 
@@ -144,11 +159,10 @@ def fetch_recent(token, username, limit=100):
             continue
     if not rows:
         return pd.DataFrame(columns=SOCIAL_COLUMNS)
-    df = pd.DataFrame(rows, columns=["ts", "subreddit", "kind", "text", "score", "permalink"])
+    df = pd.DataFrame(rows, columns=SOCIAL_COLUMNS)
     df["ts"] = pd.to_datetime(df["ts"], unit="s", errors="coerce")
-    df["score"] = pd.to_numeric(df["score"], errors="coerce")
-    df["source"] = "Reddit (live)"
-    return df[SOCIAL_COLUMNS].dropna(subset=["ts"]).sort_values("ts").reset_index(drop=True)
+    df["engagement"] = pd.to_numeric(df["engagement"], errors="coerce")
+    return df.dropna(subset=["ts"]).sort_values("ts").reset_index(drop=True)
 
 
 def handle_callback():

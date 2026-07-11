@@ -82,10 +82,19 @@ spotify_token = None  # set when connected; drives the live top-charts panel
 
 if mode == "Connect Spotify (live)":
     if not sp.is_configured():
-        st.sidebar.warning(
-            "Spotify isn't configured yet. Add your app credentials to "
-            "`.streamlit/secrets.toml` (see the README), then reload."
-        )
+        with st.sidebar.expander("Enter Spotify app credentials", expanded=True):
+            st.caption("Create an app at developer.spotify.com/dashboard, then paste "
+                       "below. Stored only in this session.")
+            _cid = st.text_input("Client ID")
+            _secret = st.text_input("Client secret", type="password")
+            _redirect = st.text_input("Redirect URI", value="http://127.0.0.1:8501")
+            if st.button("Save Spotify credentials"):
+                if _cid and _secret and _redirect:
+                    sp.set_credentials(_cid, _secret, _redirect)
+                    st.rerun()
+                else:
+                    st.warning("Client ID, secret, and redirect URI are required.")
+        st.sidebar.info("Add your Spotify app credentials above to enable the login.")
     else:
         spotify_token = sp.valid_access_token()
         if spotify_token:

@@ -9,9 +9,9 @@ export formats into a single clean schema, then visualize it.
   instant charts, or upload exports for full history.
 - **📚 Reading** — Goodreads, StoryGraph, Kindle: books read, pages, ratings,
   reading pace, and superlatives. Upload-first (reading exports are instant).
-- **💬 Social** — Reddit: posts/comments over time, top subreddits, when you post,
-  superlatives. **Connect Reddit** for live data (its free API allows personal
-  use), or upload a data-request export.
+- **💬 Social** — Reddit, Twitter/X, and Instagram: activity over time, top
+  subreddits/hashtags, when you post, superlatives. **Connect Reddit** for live
+  data; Twitter/Instagram come from export files (no personal API exists).
 - **🛍️ Shopping** — Amazon & Walmart order history: total spend, spend over time,
   top categories, biggest purchase. Upload-first (no personal-purchase API exists).
 
@@ -59,15 +59,27 @@ There's no live API for any reading service (Goodreads' is deprecated; StoryGrap
 and Fable have none), but every reading export downloads instantly, so upload is
 all you need.
 
-**Social (Reddit)**
-- **Connect Reddit** — live login (its free API tier allows personal, non-commercial
-  use). Create a *web app* at reddit.com/prefs/apps and add the `[reddit]` secrets.
-- Export — reddit.com/settings/data-request → unzip → `posts.csv` + `comments.csv`.
+**Social**
+- Reddit — **Connect Reddit** (live login; free API allows personal use), or export
+  via reddit.com/settings/data-request → `posts.csv` + `comments.csv`.
+- Twitter/X — download your **X archive** → `data/tweets.js`.
+- Instagram — **Download Your Information** (JSON) → `posts_1.json`.
+
+There's no personal-data API for X or Instagram (X is paywalled; Instagram's died
+in 2024), so those two are upload-only — but the exports are free.
 
 **Shopping**
 - Amazon — *Request My Data* → `Retail.OrderHistory` CSV.
 - Walmart — account/order-history export. Note: X/Instagram/Amazon/Walmart have no
   personal-data API, so shopping is upload-only.
+
+## Credentials: secrets file *or* on-page form
+
+For **Connect Spotify** and **Connect Reddit**, you can either add credentials to
+`.streamlit/secrets.toml` (see `secrets.toml.example`) **or** just paste them into
+the small form that appears on the Music / Social page. Form-entered credentials
+are kept in the session only (never written to disk) — handy for a quick demo
+without touching config files.
 
 ## Connect Spotify (optional, music page)
 

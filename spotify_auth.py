@@ -43,7 +43,12 @@ TIME_RANGES = {
 # Config
 # ---------------------------------------------------------------------------
 def get_config():
-    """Return (client_id, client_secret, redirect_uri) or None if not set up."""
+    """Return (client_id, client_secret, redirect_uri). On-page form first, then secrets."""
+    creds = st.session_state.get("spotify_creds")
+    if creds:
+        cid, secret, redirect = creds.get("client_id"), creds.get("client_secret"), creds.get("redirect_uri")
+        if cid and secret and redirect:
+            return cid, secret, redirect
     try:
         cfg = st.secrets["spotify"]
         cid = cfg["client_id"]
@@ -54,6 +59,15 @@ def get_config():
     except Exception:
         pass
     return None
+
+
+def set_credentials(client_id, client_secret, redirect_uri):
+    """Store UI-entered credentials in the session (not persisted to disk)."""
+    st.session_state["spotify_creds"] = {
+        "client_id": client_id.strip(),
+        "client_secret": client_secret.strip(),
+        "redirect_uri": redirect_uri.strip(),
+    }
 
 
 def is_configured():

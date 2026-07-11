@@ -44,9 +44,9 @@ with col1:
 
     st.markdown("### 💬 Social")
     st.markdown(
-        "Your Reddit year — posts, comments, top subreddits, and when you post. "
-        "**Connect Reddit** for live data (its free API allows personal use), or "
-        "upload a data-request export."
+        "Reddit, Twitter/X, and Instagram in one view — activity over time, top "
+        "subreddits/hashtags, and when you post. **Connect Reddit** for live data; "
+        "Twitter/Instagram come from their export files."
     )
     st.page_link("pages/3_💬_Social.py", label="Open Social →")
 with col2:
